@@ -13,102 +13,39 @@
 
 #define WIN32_LEAN_AND_MEAN
 #ifdef _WIN64
-#define _WIN32_WINNT 0x0501	// at least XP required
+#define _WIN32_WINNT 0x0600	// MinGW-w64 wants this defined for Wow64 stuff
 #else
-#define _WIN32_WINNT 0x0500	// at least Windows 2000 required
+#define _WIN32_WINNT 0x0500	// MinGW wants this defined for OpenThread
 #endif
-#define WINVER _WIN32_WINNT
 #include <windows.h>
-#include <tlhelp32.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifndef LOAD_LIBRARY_AS_IMAGE_RESOURCE
-#define LOAD_LIBRARY_AS_IMAGE_RESOURCE 0x20
-#endif
-#ifndef LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE
-#define LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE 0x20
-#endif
-#ifndef TH32CS_SNAPMODULE32
-#define TH32CS_SNAPMODULE32 0x10
-#endif
-#if !defined(HandleToULong) && !defined(_WIN64)
-#define HandleToULong HandleToUlong
-#endif
-
-#ifndef __IMAGE_COR20_HEADER_DEFINED__
-#define COMIMAGE_FLAGS_ILONLY	     1
-#define COMIMAGE_FLAGS_32BITREQUIRED 2
-
-// CLR 2.0 header structure.
-typedef struct IMAGE_COR20_HEADER
-{
-    DWORD                   cb;
-    WORD                    MajorRuntimeVersion;
-    WORD                    MinorRuntimeVersion;
-    IMAGE_DATA_DIRECTORY    MetaData;
-    DWORD                   Flags;
-    union {
-        DWORD               EntryPointToken;
-        DWORD               EntryPointRVA;
-    } DUMMYUNIONNAME;
-    IMAGE_DATA_DIRECTORY    Resources;
-    IMAGE_DATA_DIRECTORY    StrongNameSignature;
-    IMAGE_DATA_DIRECTORY    CodeManagerTable;
-    IMAGE_DATA_DIRECTORY    VTableFixups;
-    IMAGE_DATA_DIRECTORY    ExportAddressTableJumps;
-    IMAGE_DATA_DIRECTORY    ManagedNativeHeader;
-} IMAGE_COR20_HEADER, *PIMAGE_COR20_HEADER;
-#endif
-
 #define lenof(array) (sizeof(array)/sizeof(*(array)))
 #define TSIZE(size)  ((size) * sizeof(TCHAR))
-#define PTRSZ	     sizeof(PVOID)
-
-// Macro for adding pointers/DWORDs together without C arithmetic interfering
-#define MakeVA( cast, offset ) (cast)((DWORD_PTR)pDosHeader + (DWORD)(offset))
-
-#define DATADIRS  OptionalHeader.NumberOfRvaAndSizes
-#define EXPORTDIR OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT]
-#define IMPORTDIR OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT]
-#define BOUNDDIR  OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT]
-#define IATDIR	  OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IAT]
-#define COMDIR	  OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR]
-
-// Reduce the verbosity of some functions (assuming variable names).
-#define ReadProcVar(a, b)     ReadProcMem( a, b, sizeof(*(b)) )
-#define WriteProcVar(a, b)    WriteProcMem( a, b, sizeof(*(b)) )
-#define ReadProcMem(a, b, c)  ReadProcessMemory( ppi->hProcess, a, b, c, NULL )
-#define WriteProcMem(a, b, c) WriteProcessMemory( ppi->hProcess, a, b, c, NULL )
-#define VirtProtVar(a, b)     VirtualProtectEx( ppi->hProcess, a, sizeof(*(a)), b, &pr )
 
 
-int    ProcessType( LPPROCESS_INFORMATION, PBYTE*, BOOL* );
-BOOL   Wow64Process( HANDLE );
+typedef struct
+{
+  BYTE foreground;	// ANSI base color (0 to 7; add 30)
+  BYTE background;	// ANSI base color (0 to 7; add 40)
+  BYTE bold;		// console FOREGROUND_INTENSITY bit
+  BYTE underline;	// console BACKGROUND_INTENSITY bit
+  BYTE rvideo;		// swap foreground/bold & background/underline
+  BYTE concealed;	// set foreground/bold to background/underline
+  BYTE reverse; 	// swap console foreground & background attributes
+} GRM, *PGRM;		// Graphic Rendition Mode
 
-void   InjectDLL( LPPROCESS_INFORMATION, PBYTE );
-#ifdef _WIN64
-void   InjectDLL32( LPPROCESS_INFORMATION, PBYTE );
-void   InjectDLL64( LPPROCESS_INFORMATION );
-DWORD  GetProcRVA( LPCTSTR, LPCSTR, int );
-#else
-DWORD  GetProcRVA( LPCTSTR, LPCSTR );
-#endif
 
-extern HANDLE hHeap;
+int  ProcessType( LPPROCESS_INFORMATION, BOOL* );
+void InjectDLL32( LPPROCESS_INFORMATION, LPCTSTR );
+void InjectDLL64( LPPROCESS_INFORMATION, LPCTSTR );
 
 extern TCHAR  prog_path[MAX_PATH];
 extern LPTSTR prog;
 LPTSTR get_program_name( LPTSTR );
 
-extern TCHAR  DllName[MAX_PATH];
-extern LPTSTR DllNameType;
-extern char   ansi_dll[MAX_PATH];
-extern DWORD  ansi_len;
-extern char*  ansi_bits;
-void   set_ansi_dll( void );
-
 extern int log_level;
-void   DEBUGSTR( int level, LPCSTR szFormat, ... );
+void DEBUGSTR( int level, LPTSTR szFormat, ... );
 
 #endif

@@ -11,6 +11,7 @@ end
 
 Then ("I should be able to look for images of Giraffes") do
   click_on 'images'
+  sleep 5
 end
 
 Then ("I should be able to look for images of Cats") do

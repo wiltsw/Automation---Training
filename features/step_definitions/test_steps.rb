@@ -8,3 +8,7 @@ Then("I should see the google logo and be able to perform a search") do
   fill_in 'lst-ib', with: 'Giraffes'
   click_on 'Google Search'
 end
+
+Then ("I should be able to look for images of Giraffes") do
+  click_on 'images'
+end
